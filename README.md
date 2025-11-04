@@ -1,0 +1,109 @@
+# iTerm 3-Pane Auto Layout with direnv + Spec Kit
+
+This repository automatically sets up an **iTerm2 three-pane layout** when you `cd` into the directory, using [`direnv`](https://direnv.net/), AppleScript, and [Spec Kit](https://github.com/github/spec-kit).
+
+- **Top left:** runs `codex`
+- **Top right:** runs `claude`
+- **Bottom:** opens a normal shell in the same directory
+
+Existing iTerm tabs are preserved — a new tab is created for the layout.
+
+---
+
+## ⚙️ Setup
+
+### 1. Clone this repository and run the setup script
+
+```bash
+git clone https://github.com/<your-username>/<repo-name>.git
+cd <repo-name>
+bash setup.sh
+```
+
+This will:
+- Install `direnv` if missing
+- Add `eval "$(direnv hook zsh)"` to your shell config
+- Create `.envrc` and `scripts/iterm-3pane.scpt`
+- Set up automatic iTerm3-pane layout
+
+Then approve the `.envrc`:
+
+```bash
+direnv allow
+```
+
+---
+
+### 2. Initialize Spec Kit (required)
+
+This project assumes you are using [Spec Kit](https://github.com/github/spec-kit) for custom prompt and specification management.
+
+Run this command once in the project root:
+
+```bash
+uvx --from git+https://github.com/github/spec-kit.git specify init --here
+```
+
+This will initialize Spec Kit and prepare the environment for local prompt definitions.
+
+---
+
+## 🧠 How It Works
+
+1. `direnv` monitors `.envrc`
+2. On entering the directory:
+   - Exports `CODEX_HOME="$PWD/.codex"`
+   - Calls the AppleScript (`scripts/iterm-3pane.scpt`)
+3. The script:
+   - Opens a **new iTerm tab**
+   - Splits it into three panes:
+     - Left top → `codex`
+     - Right top → `claude`
+     - Bottom → shell in same directory
+
+Infinite recursion is avoided via the `ITERM_LAYOUT_DONE=1` flag.
+
+---
+
+## 📦 Project Structure
+
+```
+.
+├── .envrc
+├── scripts/
+│   └── iterm-3pane.scpt
+├── setup.sh
+└── spec/
+    └── (created by Spec Kit)
+```
+
+---
+
+## 🧩 Customization
+
+- To change the commands for the upper panes, edit these lines in `scripts/iterm-3pane.scpt`:
+  ```applescript
+  write text "export ITERM_LAYOUT_DONE=1; cd " & workdir & "; codex"
+  write text "export ITERM_LAYOUT_DONE=1; cd " & workdir & "; claude"
+  ```
+  Replace `codex` or `claude` with any command you prefer.
+
+---
+
+## 🔒 Security Notice
+
+Because `.envrc` runs arbitrary shell commands, users must manually approve it:
+
+```bash
+direnv allow
+```
+
+This is a safeguard to prevent unexpected execution on clone.
+
+---
+
+**Requirements:**
+- macOS with iTerm2
+- [`direnv`](https://direnv.net/)
+- [Spec Kit](https://github.com/github/spec-kit)
+- (Optional) Homebrew for automatic installation
