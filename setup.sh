@@ -15,7 +15,7 @@ mkdir -p scripts
 # 3. Write .envrc
 cat > .envrc <<'EOF'
 # Use repo-local .codex directory
-export CODEX_HOME="$PWD/.codex"
+# export CODEX_HOME="$PWD/.codex"
 
 # Prevent infinite layout calls in spawned panes
 if [ -n "$ITERM_LAYOUT_DONE" ]; then
