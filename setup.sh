@@ -12,7 +12,11 @@ fi
 # 2. Create scripts directory
 mkdir -p scripts
 
-# 3. Write .envrc
+# 3. Create AGENTS.md and symbolic link
+touch AGENTS.md
+ln -sf AGENTS.md CLAUDE.md
+
+# 4. Write .envrc
 cat > .envrc <<'EOF'
 
 # Prevent infinite layout calls in spawned panes
@@ -26,7 +30,7 @@ if [ "$TERM_PROGRAM" = "iTerm.app" ]; then
 fi
 EOF
 
-# 4. Write AppleScript for iTerm (keep existing tabs, open a new tab with 4 panes)
+# 5. Write AppleScript for iTerm (keep existing tabs, open a new tab with 4 panes)
 cat > scripts/iterm-3pane.scpt <<'EOF'
 on run argv
   set workdir to item 1 of argv
