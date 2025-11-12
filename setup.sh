@@ -9,6 +9,15 @@ if ! command -v direnv >/dev/null 2>&1; then
   echo 'eval "$(direnv hook bash)"' >> ~/.bashrc 2>/dev/null || true
 fi
 
+if ! grep -q 'eval "$(direnv hook zsh)"' ~/.zshrc 2>/dev/null; then
+  echo '[info] adding direnv hook to ~/.zshrc'
+  echo 'eval "$(direnv hook zsh)"' >> ~/.zshrc
+fi
+if ! grep -q 'eval "$(direnv hook bash)"' ~/.bashrc 2>/dev/null; then
+  echo '[info] adding direnv hook to ~/.bashrc'
+  echo 'eval "$(direnv hook bash)"' >> ~/.bashrc
+fi
+
 # 2. Create scripts directory
 mkdir -p scripts
 
