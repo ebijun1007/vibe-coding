@@ -8,6 +8,7 @@ templates_dir="$project_root/scripts/templates"
 tmp_home="$(mktemp -d -t vc-test-home-XXXXXX)"
 tmp_repo="$(mktemp -d -t vc-test-repo-XXXXXX)"
 stub_bin="$(mktemp -d -t vc-test-bin-XXXXXX)"
+canonical_agents="$templates_dir/AGENTS.md"
 canonical_claude="$templates_dir/CLAUDE.md"
 canonical_core="$templates_dir/CORE.md"
 canonical_todo="$templates_dir/todo.md"
@@ -54,7 +55,12 @@ if [ "$missing" -ne 0 ]; then
   exit 1
 fi
 
-# Newly created CLAUDE.md, CORE.md, and todo.md should be seeded with the canonical prompts.
+# Newly created AGENTS.md, CLAUDE.md, CORE.md, and todo.md should be seeded with the canonical prompts.
+if ! cmp -s "$canonical_agents" AGENTS.md; then
+  echo "[fail] AGENTS.md was not seeded with the canonical design/test prompt" >&2
+  exit 1
+fi
+
 if ! cmp -s "$canonical_claude" CLAUDE.md; then
   echo "[fail] CLAUDE.md was not seeded with the canonical implementation prompt" >&2
   exit 1
@@ -113,8 +119,8 @@ if [ ! -L CLAUDE.md ]; then
   exit 1
 fi
 
-# When CLAUDE/CORE/todo exist but are empty, they should be reseeded.
-for file in CLAUDE.md CORE.md todo.md; do
+# When AGENTS/CLAUDE/CORE/todo exist but are empty, they should be reseeded.
+for file in AGENTS.md CLAUDE.md CORE.md todo.md; do
   rm -f "$file"
   touch "$file"
 done
@@ -123,6 +129,11 @@ PATH="$stub_bin:$PATH" \
 TERM_PROGRAM="iTerm.app" \
 HOME="$tmp_home" \
 scripts/vc >/dev/null
+
+if ! cmp -s "$canonical_agents" AGENTS.md; then
+  echo "[fail] Empty AGENTS.md was not reseeded with the canonical prompt" >&2
+  exit 1
+fi
 
 if ! cmp -s "$canonical_claude" CLAUDE.md; then
   echo "[fail] Empty CLAUDE.md was not reseeded with the canonical prompt" >&2
