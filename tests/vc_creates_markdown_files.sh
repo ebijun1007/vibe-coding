@@ -70,6 +70,11 @@ if ! cmp -s "$canonical_todo" todo.md; then
   exit 1
 fi
 
+if [ -s todo.md ]; then
+  echo "[fail] todo.md should be empty on creation" >&2
+  exit 1
+fi
+
 if [ -s CUSTOM_PROMPTS.md ]; then
   echo "[fail] CUSTOM_PROMPTS.md should be empty on creation" >&2
   exit 1
@@ -131,6 +136,11 @@ fi
 
 if ! cmp -s "$canonical_todo" todo.md; then
   echo "[fail] Empty todo.md was not reseeded with the canonical plan" >&2
+  exit 1
+fi
+
+if [ -s todo.md ]; then
+  echo "[fail] todo.md should be empty when reseeded" >&2
   exit 1
 fi
 
