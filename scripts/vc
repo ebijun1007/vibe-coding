@@ -1,5 +1,19 @@
-on run argv
-  set workdir to item 1 of argv
+#!/usr/bin/env bash
+set -e
+
+# Check if running in iTerm
+if [ "$TERM_PROGRAM" != "iTerm.app" ]; then
+  echo "[error] This command only works in iTerm.app"
+  exit 1
+fi
+
+# Get current working directory
+WORKDIR="$PWD"
+
+# Run AppleScript to create iTerm layout
+osascript <<EOF
+on run
+  set workdir to "$WORKDIR"
 
   tell application "iTerm"
     -- keep current window, just add a new tab
@@ -11,8 +25,6 @@ on run argv
 
     -- first session in the new tab
     tell current session of theTab
-      -- set a flag so .envrc doesn't run again in this tab
-      write text "export ITERM_LAYOUT_DONE=1; cd " & workdir
       -- split into left and right
       set leftPane to it
       set rightPane to (split vertically with default profile)
@@ -31,22 +43,25 @@ on run argv
 
     -- left pane: watch todo.md (create if not exists)
     tell leftPane
-      write text "export ITERM_LAYOUT_DONE=1; cd " & workdir & "; [ ! -f todo.md ] && touch todo.md; while true; do clear; cat todo.md; sleep 1; done"
+      write text "cd " & workdir & "; [ ! -f todo.md ] && touch todo.md; while true; do clear; cat todo.md; sleep 1; done"
     end tell
 
     -- top-right: run codex
     tell topRight
-      write text "export ITERM_LAYOUT_DONE=1; cd " & workdir & "; codex"
+      write text "cd " & workdir & "; codex"
     end tell
 
     -- middle-right: run claude with --dangerously-skip-permissions
     tell middleRight
-      write text "export ITERM_LAYOUT_DONE=1; cd " & workdir & "; claude --dangerously-skip-permissions"
+      write text "cd " & workdir & "; claude --dangerously-skip-permissions"
     end tell
 
     -- bottom-right: just cd into the repo and stay there
     tell bottomRight
-      write text "export ITERM_LAYOUT_DONE=1; cd " & workdir
+      write text "cd " & workdir
     end tell
   end tell
 end run
+EOF
+
+echo "[done] iTerm layout created for: $WORKDIR"

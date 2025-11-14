@@ -1,10 +1,12 @@
-# iTerm 3-Pane Auto Layout with direnv
+# iTerm 4-Pane Layout with `vc` Command
 
-This repository automatically sets up an **iTerm2 three-pane layout** when you `cd` into the directory, using [`direnv`](https://direnv.net/) and AppleScript.
+This repository provides a **`vc` command** that sets up an **iTerm2 four-pane layout** in any directory.
 
-- **Top left:** runs `codex`
-- **Top right:** runs `claude`
-- **Bottom:** opens a normal shell in the same directory
+**Layout:**
+- **Left pane:** watches `todo.md` (auto-created if missing)
+- **Top-right:** runs `codex`
+- **Middle-right:** runs `claude --dangerously-skip-permissions`
+- **Bottom-right:** opens a normal shell in the same directory
 
 Existing iTerm tabs are preserved — a new tab is created for the layout.
 
@@ -21,33 +23,37 @@ bash setup.sh
 ```
 
 This will:
-- Install `direnv` if missing
-- Add `eval "$(direnv hook zsh)"` to your shell config
-- Create `.envrc` and `scripts/iterm-3pane.scpt`
-- Set up automatic iTerm3-pane layout
+- Install the `vc` command to `~/bin`
+- Add `~/bin` to your `PATH` if needed
+- Create `AGENTS.md` and `CLAUDE.md` symlink
 
-Then approve the `.envrc`:
+### 2. Reload your shell configuration
 
 ```bash
-direnv allow
+source ~/.zshrc  # or source ~/.bashrc
 ```
+
+---
+
+## 🚀 Usage
+
+Navigate to any directory where you want to work, then run:
+
+```bash
+vc
+```
+
+iTerm will create a new tab with 4 panes as described above.
 
 ---
 
 ## 🧠 How It Works
 
-1. `direnv` monitors `.envrc`
-2. On entering the directory:
-   - Exports `CODEX_HOME="$PWD/.codex"`
-   - Calls the AppleScript (`scripts/iterm-3pane.scpt`)
-3. The script:
-   - Opens a **new iTerm tab**
-   - Splits it into three panes:
-     - Left top → `codex`
-     - Right top → `claude`
-     - Bottom → shell in same directory
-
-Infinite recursion is avoided via the `ITERM_LAYOUT_DONE=1` flag.
+1. The `vc` command is a shell script installed in `~/bin`
+2. When executed, it:
+   - Detects the current working directory
+   - Runs AppleScript to create a new iTerm tab with 4 panes
+   - Sets up each pane with the appropriate command
 
 ---
 
@@ -55,38 +61,36 @@ Infinite recursion is avoided via the `ITERM_LAYOUT_DONE=1` flag.
 
 ```
 .
-├── .envrc
 ├── scripts/
-│   └── iterm-3pane.scpt
-└── setup.sh
+│   └── vc            # The vc command script
+├── setup.sh          # Setup script
+├── AGENTS.md         # Agent configuration
+└── CLAUDE.md         # Symlink to AGENTS.md
 ```
 
 ---
 
 ## 🧩 Customization
 
-- To change the commands for the upper panes, edit these lines in `scripts/iterm-3pane.scpt`:
-  ```applescript
-  write text "export ITERM_LAYOUT_DONE=1; cd " & workdir & "; codex"
-  write text "export ITERM_LAYOUT_DONE=1; cd " & workdir & "; claude"
-  ```
-  Replace `codex` or `claude` with any command you prefer.
+To change the commands for each pane, edit `scripts/vc` before running `setup.sh`, or directly edit `~/bin/vc` after installation.
 
----
+Look for these sections in the AppleScript:
+```applescript
+-- left pane: watch todo.md
+write text "cd " & workdir & "; [ ! -f todo.md ] && touch todo.md; while true; do clear; cat todo.md; sleep 1; done"
 
-## 🔒 Security Notice
+-- top-right: run codex
+write text "cd " & workdir & "; codex"
 
-Because `.envrc` runs arbitrary shell commands, users must manually approve it:
+-- middle-right: run claude
+write text "cd " & workdir & "; claude --dangerously-skip-permissions"
 
-```bash
-direnv allow
+-- bottom-right: shell
+write text "cd " & workdir
 ```
-
-This is a safeguard to prevent unexpected execution on clone.
 
 ---
 
 **Requirements:**
 - macOS with iTerm2
-- [`direnv`](https://direnv.net/)
-- (Optional) Homebrew for automatic installation
+- The commands you want to run in each pane (`codex`, `claude`, etc.)
