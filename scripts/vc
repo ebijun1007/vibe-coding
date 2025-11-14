@@ -12,16 +12,150 @@ WORKDIR="$PWD"
 
 # Pre-flight: ensure markdown files exist (only create if missing)
 created_files=()
-for file in AGENTS.md CLAUDE.md todo.md; do
+seeded_files=()
+script_dir="$(cd "$(dirname "$0")/.." && pwd)"
+template_dir="$script_dir/scripts/templates"
+bootstrap_files=(AGENTS.md CLAUDE.md CORE.md CUSTOM_PROMPTS.md todo.md)
+
+CLAUDE_TEMPLATE="$(cat <<'EOF'
+# Implementation Agent Prompt
+
+Before implementing anything, read `CUSTOM_PROMPTS.md` and follow every directive inside. If it is empty, proceed with the default rules below, but treat any new instructions added to that file as immediately authoritative.
+
+You are the implementation-focused agent. Your job is to turn the design/test agent's plan and failing tests into production-ready code. Follow these rules strictly.
+
+1. Preconditions
+   - Ground yourself by reviewing `CORE.md` so your implementation choices support the product goal, concepts, and ideal use cases.
+   - Only start work when `todo.md` begins with `Status: Ready`. If it is `Status: Blocked - ...`, resolve or clarify the listed questions with the design agent before making code changes.
+   - Read the entire plan in `todo.md` plus any existing tests to ensure full context. Do not improvise beyond what is documented.
+
+2. Scope & Constraints
+   - Modify production code, configuration, and automated tests as needed to satisfy the plan, but never overwrite or delete the design agent's entries in `todo.md` except to mark completed items or append implementation notes.
+   - Do not edit documentation files (`docs/`, `.md`, etc.). Request updates from the design/test agent instead.
+   - Respect YAGNI and DRY; introduce the minimal changes that meet the documented behavior while reusing existing abstractions.
+   - Keep commits (if requested) and diffs small and reviewable. Avoid speculative TODOs—surface new concerns back to the design agent instead.
+
+3. Workflow
+   - Translate each actionable line in `todo.md` into concrete code changes, tackling them in the documented order.
+   - Run relevant tests frequently. Start by running the failing specs authored under `tests/`, then any broader suite needed for confidence.
+   - Treat a user message that is exactly `todo` as the go-signal to begin executing every pending step in `todo.md` immediately—acknowledge the command and start the workflow without asking for further confirmation unless blockers exist.
+   - Implement the production changes needed to make the new tests pass, adjusting or extending tests only when behavior truly differs from the documented intent.
+   - When a step is completed, mark it in `todo.md` (e.g., `[x] Step description`) and note any deviations or follow-ups.
+   - If you uncover missing requirements, conflicting expectations, or blockers, pause implementation, set `Status: Blocked - ...` at the top of `todo.md`, document the issue clearly, and hand control back to the design agent.
+
+4. Quality Bar
+   - Match surrounding style, patterns, and performance characteristics.
+   - Apply the Single Responsibility Principle: implement behavior with small, decoupled modules or functions so pieces can be swapped or extended easily.
+   - Add or update regression tests when fixing bugs, ensuring green builds locally before handing off.
+   - Favor readability over cleverness; include concise comments only when intent is non-obvious.
+   - Keep error handling and edge cases consistent with the guidelines supplied by the design/test agent.
+
+5. Hand-off Expectations
+   - Provide a clean `todo.md` with completed items checked off, remaining work clearly listed, and `Status: Ready` unless new blockers exist.
+   - Ensure all tests pass locally and note the commands executed.
+   - Summarize any trade-offs, refactors, or TODOs that must circle back to the design/test agent for clarification or future work.
+
+Operate strictly within this prompt, collaborating with the design/test agent through `todo.md` and tests to maintain a disciplined TDD flow.
+EOF
+)"
+
+CORE_TEMPLATE="$(cat <<'EOF'
+# CORE Product Brief (Rolling 3-Month Focus)
+
+Refresh this primer at the start of each 3-month planning cycle (or when strategy shifts materially) so both agents stay aligned on medium-term direction.
+
+## Approach
+- _Treat quarterly goals as experiments: ship small, exploratory releases to validate hypotheses before investing heavily._
+- _Design features as pluggable modules that can be removed quickly if experiments fail or priorities shift._
+- _Continuously inspect results and adjust direction using agile ceremonies (reviews, retros, backlog grooming)._
+
+## Goal
+- _Describe the primary outcome CORE must deliver over the next quarter (e.g., "CORE enables teams to …")._
+- _Emphasize that quarterly initiatives are experimental and should remain pluggable/removable until validated._
+
+## Core Concepts
+- _List 3–5 foundational ideas, workflows, or constraints that define CORE regardless of the sprint._
+- _Explain how each concept influences architecture, UX, or prioritization._
+
+## Ideal Use Cases
+- _Capture 2–3 representative scenarios or personas who benefit most from CORE._
+- _Highlight pain points solved and success measures for each scenario._
+
+## Quarterly Focus
+- _Summarize the key themes, bets, or KPIs targeted in this 3-month period._
+- _Describe how each bet will be released iteratively to validate direction before investing in full-scale implementation._
+- _Note major guardrails or deprioritized areas to avoid scope creep._
+
+## Recent Achievements
+- _Record the most important outcomes delivered in the last cycle and their impact._
+- _Reference links (demos, PRs, metrics) so future readers understand context quickly._
+EOF
+)"
+
+TODO_TEMPLATE="$(cat <<'EOF'
+Status: Ready
+
+## Assumptions
+- The `vc` command must bootstrap `AGENTS.md`, `CLAUDE.md`, `CORE.md`, `CUSTOM_PROMPTS.md`, and `todo.md` only when they are missing; if a user already has content, the command must not overwrite, truncate, or re-touch those files.
+- Even legacy symlinks (e.g., `CLAUDE.md -> AGENTS.md`) count as "existing" and must not be replaced automatically — creation happens only for truly missing paths.
+- When `CLAUDE.md`, `CORE.md`, or `todo.md` is missing or empty, the file should be seeded with the exact canonical content from this repo (hard-coded within `scripts/vc` is acceptable). Non-empty files remain untouched.
+- `AGENTS.md` can remain empty for now; simply ensure the file exists without seeding.
+- `CUSTOM_PROMPTS.md` must be created as an empty file when missing and left untouched afterward (users own its content). Agents must read it at startup (documented in AGENTS/CLAUDE prompts).
+
+## Implementation Plan
+1. **Refine pre-flight bootstrap in `scripts/vc`.** Before invoking `osascript`, loop over the markdown filenames (`AGENTS.md`, `CLAUDE.md`, `CORE.md`, `CUSTOM_PROMPTS.md`, `todo.md`) and create them only when `[ ! -e "$file" ]`.
+2. **Seed canonical content when blank (excluding AGENTS/CUSTOM_PROMPTS).** For `CLAUDE.md`, `CORE.md`, and `todo.md`, detect whether the file is empty or whitespace-only. If so, write the embedded canonical content (matching the templates under `scripts/templates`). Leave `AGENTS.md` and `CUSTOM_PROMPTS.md` untouched unless missing (in which case `CUSTOM_PROMPTS.md` should be empty).
+3. **Idempotent logging.** Track whether files were created and/or seeded. Emit a message indicating which files were created or seeded so users understand when auto-population occurred.
+4. **Preserve runtime behavior.** Keep the AppleScript/watcher logic untouched so panes behave exactly as before; only bootstrap/seeding code changes.
+5. **Documentation update.** Refresh `README.md` to describe the guaranteed bootstrap behavior (including seeded contents) and clarify that existing user edits are never overwritten. Mention the new `CUSTOM_PROMPTS.md` and the fact that AGENTS/CLAUDE prompt text now lives in `scripts/templates`.
+
+## Test Plan
+- `bash tests/vc_creates_markdown_files.sh`
+  - Expand to assert that freshly created files (`AGENTS.md`, `CLAUDE.md`, `CORE.md`, `CUSTOM_PROMPTS.md`, `todo.md`) exist, that the seeded files match this repo's contents byte-for-byte, that `CUSTOM_PROMPTS.md` is created empty, existing files (including symlinks) remain untouched, and that empty files get reseeded with the canonical content where applicable.
+
+## Implementation Notes
+- Created `scripts/templates/todo.md` with canonical content matching this repo's `todo.md`
+- Added seeding logic for `todo.md` in `scripts/vc` at lines 49-55, following the same pattern as AGENTS.md, CLAUDE.md, and CORE.md
+- All tests pass successfully
+- Documentation update (step 5) remains pending—hand off to design/test agent
+EOF
+)"
+
+for file in "${bootstrap_files[@]}"; do
   if [ ! -e "$file" ]; then
     touch "$file"
     created_files+=("$file")
   fi
 done
 
+seed_if_empty() {
+  local target="$1"
+  local template="$2"
+  local fallback="$3"
+
+  if [ -s "$target" ]; then
+    return
+  fi
+
+  if [ -f "$template" ] && [ -s "$template" ]; then
+    cp "$template" "$target"
+  else
+    printf '%s' "$fallback" > "$target"
+  fi
+  seeded_files+=("$target")
+}
+
+seed_if_empty "CLAUDE.md" "$template_dir/CLAUDE.md" "$CLAUDE_TEMPLATE"
+seed_if_empty "CORE.md" "$template_dir/CORE.md" "$CORE_TEMPLATE"
+seed_if_empty "todo.md" "$template_dir/todo.md" "$TODO_TEMPLATE"
+
 if [ ${#created_files[@]} -gt 0 ]; then
   echo "[info] Created ${created_files[*]}"
-else
+fi
+if [ ${#seeded_files[@]} -gt 0 ]; then
+  echo "[info] Seeded ${seeded_files[*]}"
+fi
+if [ ${#created_files[@]} -eq 0 ] && [ ${#seeded_files[@]} -eq 0 ]; then
   echo "[info] Markdown files already present"
 fi
 

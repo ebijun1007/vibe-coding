@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Verifies scripts/vc materializes AGENTS.md, CLAUDE.md, and todo.md as real files.
+# Verifies scripts/vc bootstraps the required markdown files without overwriting user content.
 
 project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+templates_dir="$project_root/scripts/templates"
 tmp_home="$(mktemp -d -t vc-test-home-XXXXXX)"
 tmp_repo="$(mktemp -d -t vc-test-repo-XXXXXX)"
 stub_bin="$(mktemp -d -t vc-test-bin-XXXXXX)"
+canonical_claude="$templates_dir/CLAUDE.md"
+canonical_core="$templates_dir/CORE.md"
+canonical_todo="$templates_dir/todo.md"
+files=(AGENTS.md CLAUDE.md CORE.md CUSTOM_PROMPTS.md todo.md)
 
 cleanup() {
   rm -rf "$tmp_home" "$tmp_repo" "$stub_bin"
@@ -30,7 +35,7 @@ pushd "$tmp_repo" >/dev/null
 
 chmod +x scripts/vc
 
-rm -f AGENTS.md CLAUDE.md todo.md
+rm -f "${files[@]}"
 
 PATH="$stub_bin:$PATH" \
 TERM_PROGRAM="iTerm.app" \
@@ -38,7 +43,7 @@ HOME="$tmp_home" \
 scripts/vc >/dev/null
 
 missing=0
-for file in AGENTS.md CLAUDE.md todo.md; do
+for file in "${files[@]}"; do
   if [ ! -f "$file" ]; then
     echo "[fail] Expected $file to exist after running scripts/vc" >&2
     missing=1
@@ -49,13 +54,29 @@ if [ "$missing" -ne 0 ]; then
   exit 1
 fi
 
-if [ -L CLAUDE.md ]; then
-  echo "[fail] CLAUDE.md should be a real Markdown file, not a symlink" >&2
+# Newly created CLAUDE.md, CORE.md, and todo.md should be seeded with the canonical prompts.
+if ! cmp -s "$canonical_claude" CLAUDE.md; then
+  echo "[fail] CLAUDE.md was not seeded with the canonical implementation prompt" >&2
+  exit 1
+fi
+
+if ! cmp -s "$canonical_core" CORE.md; then
+  echo "[fail] CORE.md was not seeded with the canonical product brief" >&2
+  exit 1
+fi
+
+if ! cmp -s "$canonical_todo" todo.md; then
+  echo "[fail] todo.md was not seeded with the canonical plan" >&2
+  exit 1
+fi
+
+if [ -s CUSTOM_PROMPTS.md ]; then
+  echo "[fail] CUSTOM_PROMPTS.md should be empty on creation" >&2
   exit 1
 fi
 
 # Seed custom content and ensure vc preserves it on subsequent runs.
-for file in AGENTS.md CLAUDE.md todo.md; do
+for file in "${files[@]}"; do
   sentinel="existing content for ${file}"
   printf '%s\n' "$sentinel" > "$file"
   cp "$file" ".$file.expected"
@@ -66,7 +87,7 @@ TERM_PROGRAM="iTerm.app" \
 HOME="$tmp_home" \
 scripts/vc >/dev/null
 
-for file in AGENTS.md CLAUDE.md todo.md; do
+for file in "${files[@]}"; do
   if ! cmp -s ".$file.expected" "$file"; then
     echo "[fail] $file was modified even though it already existed" >&2
     exit 1
@@ -87,6 +108,32 @@ if [ ! -L CLAUDE.md ]; then
   exit 1
 fi
 
+# When CLAUDE/CORE/todo exist but are empty, they should be reseeded.
+for file in CLAUDE.md CORE.md todo.md; do
+  rm -f "$file"
+  touch "$file"
+done
+
+PATH="$stub_bin:$PATH" \
+TERM_PROGRAM="iTerm.app" \
+HOME="$tmp_home" \
+scripts/vc >/dev/null
+
+if ! cmp -s "$canonical_claude" CLAUDE.md; then
+  echo "[fail] Empty CLAUDE.md was not reseeded with the canonical prompt" >&2
+  exit 1
+fi
+
+if ! cmp -s "$canonical_core" CORE.md; then
+  echo "[fail] Empty CORE.md was not reseeded with the canonical brief" >&2
+  exit 1
+fi
+
+if ! cmp -s "$canonical_todo" todo.md; then
+  echo "[fail] Empty todo.md was not reseeded with the canonical plan" >&2
+  exit 1
+fi
+
 popd >/dev/null
 
-echo "[pass] scripts/vc created three Markdown files"
+echo "[pass] scripts/vc bootstrapped markdown files without overwriting content"

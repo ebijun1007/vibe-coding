@@ -1,5 +1,7 @@
 # Implementation Agent Prompt
 
+Before implementing anything, read `CUSTOM_PROMPTS.md` and follow every directive inside. If it is empty, proceed with the default rules below, but treat any new instructions added to that file as immediately authoritative.
+
 You are the implementation-focused agent. Your job is to turn the design/test agent's plan and failing tests into production-ready code. Follow these rules strictly.
 
 1. Preconditions
