@@ -10,55 +10,26 @@ fi
 # Get current working directory
 WORKDIR="$PWD"
 
-# Pre-flight: ensure markdown files exist (only create if missing)
-created_files=()
-seeded_files=()
-script_dir="$(cd "$(dirname "$0")/.." && pwd)"
-template_dir="$script_dir/templates"
-bootstrap_files=(AGENTS.md CLAUDE.md CORE.md CUSTOM_PROMPTS.md todo.md)
+script_dir="$(cd "$(dirname "$0")" && pwd)"
 OPENCODE_CONFIG="$WORKDIR/.opencode/opencode.json"
 CODEX_HOME="$WORKDIR/.codex"
+repo_url="https://github.com/ebijun1007/vibe-in-iterm.git"
+template_dir="$script_dir/templates"
+cleanup_dir=""
 
-for file in "${bootstrap_files[@]}"; do
-  if [ ! -e "$file" ]; then
-    touch "$file"
-    created_files+=("$file")
-  fi
-done
-
-seed_if_empty() {
-  local target="$1"
-  local template="$2"
-  if [ -s "$target" ]; then
-    return
-  fi
-
-  if [ -f "$template" ] && [ -s "$template" ]; then
-    cp "$template" "$target"
+if [ ! -d "$template_dir" ]; then
+  if command -v git >/dev/null 2>&1; then
+    cleanup_dir="$(mktemp -d)"
+    git clone -q --depth 1 "$repo_url" "$cleanup_dir/repo"
+    template_dir="$cleanup_dir/repo/templates"
   else
-    : > "$target"
+    echo "[warn] git not found and templates directory missing; skipping template copy"
+    template_dir=""
   fi
-  seeded_files+=("$target")
-}
-
-seed_if_empty "CLAUDE.md" "$template_dir/CLAUDE.md"
-seed_if_empty "CORE.md" "$template_dir/CORE.md"
-seed_if_empty "CUSTOM_PROMPTS.md" "$template_dir/CUSTOM_PROMPTS.md"
-seed_if_empty "todo.md" "$template_dir/todo.md"
-seed_if_empty "AGENTS.md" "$template_dir/AGENTS.md"
-
-if [ ${#created_files[@]} -gt 0 ]; then
-  echo "[info] Created ${created_files[*]}"
-fi
-if [ ${#seeded_files[@]} -gt 0 ]; then
-  echo "[info] Seeded ${seeded_files[*]}"
-fi
-if [ ${#created_files[@]} -eq 0 ] && [ ${#seeded_files[@]} -eq 0 ]; then
-  echo "[info] Markdown files already present"
 fi
 
 # Copy templates into the current directory without overwriting existing files
-if [ -d "$template_dir" ]; then
+if [ -n "$template_dir" ] && [ -d "$template_dir" ]; then
   mapfile -t cloned < <(rsync -ai --ignore-existing "$template_dir"/ "$WORKDIR"/ | cut -c12-)
   if [ ${#cloned[@]} -gt 0 ]; then
     echo "[info] Cloned templates into $WORKDIR: ${cloned[*]}"
@@ -66,8 +37,10 @@ if [ -d "$template_dir" ]; then
     echo "[info] Templates already present; nothing to clone"
   fi
 else
-  echo "[warn] Template directory not found at $template_dir"
+  echo "[warn] Template directory not found; skipping template copy"
 fi
+
+[ -n "$cleanup_dir" ] && rm -rf "$cleanup_dir"
 
 # Run AppleScript to create iTerm layout
 osascript <<EOF
@@ -101,9 +74,9 @@ on run
       set bottomRight to (split horizontally with default profile)
     end tell
 
-    -- left pane: watch todo.md (create if not exists)
+    -- left pane: just cd into the repo
     tell leftPane
-      write text "cd " & workdir & "; " & envExports & " [ ! -f todo.md ] && touch todo.md; command -v fswatch >/dev/null 2>&1 || brew install fswatch; fswatch -o todo.md | while read; do clear; cat todo.md; done"
+      write text "cd " & workdir & "; " & envExports
     end tell
 
     -- top-right: run codex
@@ -111,15 +84,11 @@ on run
       write text "cd " & workdir & "; " & envExports & " codex"
     end tell
 
-    -- middle-right: run claude with --dangerously-skip-permissions
+    -- bottom-right: run claude with --dangerously-skip-permissions
     tell middleRight
       write text "cd " & workdir & "; " & envExports & " claude --dangerously-skip-permissions"
     end tell
 
-    -- bottom-right: just cd into the repo and stay there
-    tell bottomRight
-      write text "cd " & workdir & "; " & envExports
-    end tell
   end tell
 end run
 EOF
