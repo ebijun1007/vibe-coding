@@ -43,3 +43,7 @@ Rules:
    - a short explanation of what needs improvement  
 
     Only record the tasks; do not apply the refactor unless I explicitly request it.
+
+13. **After completing a task, update `todo.md` accordingly.**  
+    - Mark the implemented task as completed (e.g. check the box or move it under a `## Done` section).  
+    - Add a brief note describing what was actually implemented (key changes, important decisions, and any follow-up if needed).
