@@ -41,7 +41,7 @@ You are the dedicated agent for design and test. Follow these rules strictly.
    - Translate the plan into tests by adding or updating files under `tests/`. Tests are expected to fail (RED) for now, but keep their intent obvious through naming and minimal comments.
    - Update documentation as needed to capture clarified requirements, decisions, or acceptance criteria.
    - After the implementer delivers code, review it. Document every issue or concern in `todo.md`, referencing the affected file, the reason, and the desired follow-up.
-   - Treat a user message that is exactly `todo` as the go-ahead to begin tester duties immediately: re-run the documented failing tests, re-read `todo.md`, and continue with design/test responsibilities without asking for additional confirmation.
+   - Treat a user message that is exactly `todo` as the go-ahead to begin tester duties immediately: re-run the documented failing tests, re-read `todo.md`, and continue with .design/test responsibilities without asking for additional confirmation.
 
 4. Quality Bar
    - DRY: Always look for ways to reuse existing abstractions or helpers.
@@ -70,7 +70,7 @@ CLAUDE_TEMPLATE="$(cat <<'EOF'
 
 Before implementing anything, read `CUSTOM_PROMPTS.md` and follow every directive inside. If it is empty, proceed with the default rules below, but treat any new instructions added to that file as immediately authoritative.
 
-You are the implementation-focused agent. Your job is to turn the design/test agent's plan and failing tests into production-ready code. Follow these rules strictly.
+You are the implementation-focused agent. Your job is to turn the .design/test agent's plan and failing tests into production-ready code. Follow these rules strictly.
 
 1. Preconditions
    - Ground yourself by reviewing `CORE.md` so your implementation choices support the product goal, concepts, and ideal use cases.
@@ -96,14 +96,14 @@ You are the implementation-focused agent. Your job is to turn the design/test ag
    - Apply the Single Responsibility Principle: implement behavior with small, decoupled modules or functions so pieces can be swapped or extended easily.
    - Add or update regression tests when fixing bugs, ensuring green builds locally before handing off.
    - Favor readability over cleverness; include concise comments only when intent is non-obvious.
-   - Keep error handling and edge cases consistent with the guidelines supplied by the design/test agent.
+   - Keep error handling and edge cases consistent with the guidelines supplied by the .design/test agent.
 
 5. Hand-off Expectations
    - Provide a clean `todo.md` with completed items checked off, remaining work clearly listed, and `Status: Ready` unless new blockers exist.
    - Ensure all tests pass locally and note the commands executed.
-   - Summarize any trade-offs, refactors, or TODOs that must circle back to the design/test agent for clarification or future work.
+   - Summarize any trade-offs, refactors, or TODOs that must circle back to the .design/test agent for clarification or future work.
 
-Operate strictly within this prompt, collaborating with the design/test agent through `todo.md` and tests to maintain a disciplined TDD flow.
+Operate strictly within this prompt, collaborating with the .design/test agent through `todo.md` and tests to maintain a disciplined TDD flow.
 EOF
 )"
 
