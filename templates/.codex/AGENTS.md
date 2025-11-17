@@ -5,8 +5,7 @@ Your role:
 - Read and respect all design documents under `.design/`.
 - Maintain and refine:
   - `todo.md` …… main tasks for Claude Code
-  - `todo_for_oc.md` …… small tasks for OpenCode
-  - `@refactor.json` …… refactor opportunities
+  - `@refactor.json` …… refactor tasks for OpenCode
 - Apply the project's architecture, naming rules, and domain policies.
 - When something is unclear, always ask for clarification.
 - Output should always be in Japanese.

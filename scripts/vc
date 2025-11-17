@@ -42,6 +42,21 @@ fi
 
 [ -n "$cleanup_dir" ] && rm -rf "$cleanup_dir"
 
+# Ensure .gitignore has expected entries
+ignore_entries=(.claude .opencode .codex .design refactor.json issues.md todo.md)
+gitignore_path="$WORKDIR/.gitignore"
+[[ -f "$gitignore_path" ]] || touch "$gitignore_path"
+added_entries=()
+for entry in "${ignore_entries[@]}"; do
+  if ! grep -qxF "$entry" "$gitignore_path"; then
+    echo "$entry" >> "$gitignore_path"
+    added_entries+=("$entry")
+  fi
+done
+if [ ${#added_entries[@]} -gt 0 ]; then
+  echo "[info] Updated .gitignore with: ${added_entries[*]}"
+fi
+
 # Run AppleScript to create iTerm layout
 osascript <<EOF
 on run
