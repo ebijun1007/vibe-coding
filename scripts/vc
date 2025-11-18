@@ -16,6 +16,8 @@ CODEX_HOME="$WORKDIR/.codex"
 repo_url="https://github.com/ebijun1007/vibe-in-iterm.git"
 template_dir="$script_dir/templates"
 cleanup_dir=""
+env_exports=()
+default_nnn_opener_script="$CODEX_HOME/nnn_opener.sh"
 
 if [ ! -d "$template_dir" ]; then
   if command -v git >/dev/null 2>&1; then
@@ -57,11 +59,64 @@ if [ ${#added_entries[@]} -gt 0 ]; then
   echo "[info] Updated .gitignore with: ${added_entries[*]}"
 fi
 
+# Build shared environment exports for the iTerm panes
+env_exports+=("OPENCODE_CONFIG=$OPENCODE_CONFIG")
+env_exports+=("CODEX_HOME=$CODEX_HOME")
+
+nnn_opener="${VC_NNN_OPENER:-${NNN_OPENER:-}}"
+nnn_opener_source=""
+nnn_opts="${NNN_OPTS:-}"
+if [ -n "$nnn_opener" ]; then
+  nnn_opener_source="ENV"
+elif command -v bat >/dev/null 2>&1; then
+  mkdir -p "$CODEX_HOME"
+  cat > "$default_nnn_opener_script" <<'EOF'
+#!/usr/bin/env bash
+set -e
+
+target="$1"
+if [ -z "$target" ]; then
+  exit 0
+fi
+
+if command -v bat >/dev/null 2>&1; then
+  bat --style=numbers --color=always "$target"
+else
+  "${EDITOR:-vi}" "$target"
+fi
+EOF
+  chmod +x "$default_nnn_opener_script"
+  nnn_opener="$default_nnn_opener_script"
+  nnn_opener_source="bat-wrapper"
+fi
+
+if [ -n "$nnn_opener" ]; then
+  env_exports+=("NNN_OPENER=$nnn_opener")
+  if [ "$nnn_opener_source" = "ENV" ]; then
+    echo "[info] NNN_OPENER propagated from environment: $nnn_opener"
+  else
+    echo "[info] NNN_OPENER set for nnn to use bat: $nnn_opener"
+  fi
+fi
+if [ -z "$nnn_opts" ]; then
+  env_exports+=("NNN_OPTS=c")
+  echo "[info] NNN_OPTS defaulted to 'c' for CLI opener"
+else
+  env_exports+=("NNN_OPTS=$nnn_opts")
+fi
+
+env_prefix=""
+for entry in "${env_exports[@]}"; do
+  key=${entry%%=*}
+  val=${entry#*=}
+  env_prefix+="export $key=$(printf '%q' "$val"); "
+done
+
 # Run AppleScript to create iTerm layout
-osascript <<EOF
+ENV_PREFIX="$env_prefix" osascript <<EOF
 on run
   set workdir to "$WORKDIR"
-  set envExports to "export OPENCODE_CONFIG=\"$OPENCODE_CONFIG\"; export CODEX_HOME=\"$CODEX_HOME\";"
+  set envPrefix to (system attribute "ENV_PREFIX")
 
   tell application "iTerm"
     -- keep current window, just add a new tab
@@ -89,19 +144,24 @@ on run
       set bottomRight to (split horizontally with default profile)
     end tell
 
-    -- left pane: just cd into the repo
+    -- left pane: run nnn in the repo
     tell leftPane
-      write text "cd " & workdir & "; " & envExports
+      write text "cd " & workdir & "; if command -v nnn >/dev/null 2>&1; then " & envPrefix & " nnn; else echo \"[warn] nnn not found in PATH\"; fi"
     end tell
 
     -- top-right: run codex
     tell topRight
-      write text "cd " & workdir & "; " & envExports & " codex"
+      write text "cd " & workdir & "; if command -v codex >/dev/null 2>&1; then " & envPrefix & " codex; else echo \"[warn] codex not found in PATH\"; fi"
     end tell
 
-    -- bottom-right: run claude with --dangerously-skip-permissions
+    -- middle-right: run claude (dangerously skip permissions)
     tell middleRight
-      write text "cd " & workdir & "; " & envExports & " claude --dangerously-skip-permissions"
+      write text "cd " & workdir & "; if command -v claude >/dev/null 2>&1; then " & envPrefix & " claude --dangerously-skip-permissions; else echo \"[warn] claude not found in PATH\"; fi"
+    end tell
+
+    -- bottom-right: run opencode
+    tell bottomRight
+      write text "cd " & workdir & "; if command -v opencode >/dev/null 2>&1; then " & envPrefix & " opencode; else echo \"[warn] opencode not found in PATH\"; fi"
     end tell
 
   end tell

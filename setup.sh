@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -e
 
+# 0. Ensure Homebrew is available
+if ! command -v brew >/dev/null 2>&1; then
+  echo "[warn] Homebrew not found. Please install Homebrew first: https://brew.sh/"
+  exit 1
+fi
+
 # 1. Create scripts directory
 mkdir -p scripts
 
@@ -36,6 +42,16 @@ if [ -n "$SHELL_RC" ]; then
     echo "[info] PATH already configured in $SHELL_RC"
   fi
 fi
+
+echo "[info] Checking required tools (nnn, bat)..."
+for pkg in nnn bat; do
+  if command -v "$pkg" >/dev/null 2>&1; then
+    echo "[info] $pkg already installed"
+  else
+    echo "[info] Installing $pkg via Homebrew..."
+    brew install "$pkg"
+  fi
+done
 
 echo "[done] Setup complete!"
 echo ""
