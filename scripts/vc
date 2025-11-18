@@ -80,7 +80,7 @@ if [ -z "$target" ]; then
 fi
 
 if command -v bat >/dev/null 2>&1; then
-  bat --style=numbers --color=always "$target"
+  bat --style=numbers --color=always --paging=always --pager="less -R" "$target"
 else
   "${EDITOR:-vi}" "$target"
 fi
