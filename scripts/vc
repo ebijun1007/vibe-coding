@@ -18,6 +18,7 @@ template_dir="$script_dir/templates"
 cleanup_dir=""
 env_exports=()
 default_nnn_opener_script="$CODEX_HOME/nnn_opener.sh"
+todo_path="$WORKDIR/todo.md"
 
 if [ ! -d "$template_dir" ]; then
   if command -v git >/dev/null 2>&1; then
@@ -57,6 +58,14 @@ for entry in "${ignore_entries[@]}"; do
 done
 if [ ${#added_entries[@]} -gt 0 ]; then
   echo "[info] Updated .gitignore with: ${added_entries[*]}"
+fi
+
+# Open todo.md in VS Code for the current directory
+if command -v code >/dev/null 2>&1; then
+  [ -f "$todo_path" ] || touch "$todo_path"
+  code "$todo_path"
+else
+  echo "[warn] code command not found; skipping opening todo.md"
 fi
 
 # Build shared environment exports for the iTerm panes
@@ -133,35 +142,14 @@ on run
       set rightPane to (split vertically with default profile)
     end tell
 
-    -- split the right pane into 3 sections (top, middle, bottom)
-    tell rightPane
-      set topRight to it
-      set middleBottomPane to (split horizontally with default profile)
-    end tell
-
-    tell middleBottomPane
-      set middleRight to it
-      set bottomRight to (split horizontally with default profile)
-    end tell
-
-    -- left pane: run nnn in the repo
+    -- left pane: run codex in the repo
     tell leftPane
-      write text "cd " & workdir & "; if command -v nnn >/dev/null 2>&1; then " & envPrefix & " nnn; else echo \"[warn] nnn not found in PATH\"; fi"
-    end tell
-
-    -- top-right: run codex
-    tell topRight
       write text "cd " & workdir & "; if command -v codex >/dev/null 2>&1; then " & envPrefix & " codex; else echo \"[warn] codex not found in PATH\"; fi"
     end tell
 
-    -- middle-right: run claude (dangerously skip permissions)
-    tell middleRight
-      write text "cd " & workdir & "; if command -v claude >/dev/null 2>&1; then " & envPrefix & " claude --dangerously-skip-permissions; else echo \"[warn] claude not found in PATH\"; fi"
-    end tell
-
-    -- bottom-right: run opencode
-    tell bottomRight
-      write text "cd " & workdir & "; if command -v opencode >/dev/null 2>&1; then " & envPrefix & " opencode; else echo \"[warn] opencode not found in PATH\"; fi"
+    -- right pane: run claude code (dangerously skip permissions)
+    tell rightPane
+      write text "cd " & workdir & "; if command -v claude >/dev/null 2>&1; then " & envPrefix & " claude code --dangerously-skip-permissions; else echo \"[warn] claude not found in PATH\"; fi"
     end tell
 
   end tell
