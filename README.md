@@ -1,6 +1,6 @@
 # Cursor + Vibe Kanban Workspace with `vc`
 
-`vc` is a small helper script for working in **Cursor** while keeping your tasks in **vibe-kanban**. It bootstraps the workspace files/templates you need, starts the kanban board on its default port, launches `ollama serve` for the default OpenCode backend, and primes your local environment for agent work.
+`vc` is a small helper script for working in **Cursor** while keeping your tasks in **vibe-kanban**. It bootstraps the workspace files/templates you need, starts the kanban board on its default port, and primes your local environment for agent work.
 
 ---
 
@@ -34,16 +34,15 @@ From any project directory, run:
 vc
 ```
 
-The command will prepare the workspace for Cursor, start `ollama serve`, and then launch vibe-kanban in the foreground on its default port (vibe-kanban will pick an available port).
+The command will prepare the workspace for Cursor and launch vibe-kanban in the foreground on its default port (vibe-kanban will pick an available port).
 
 ---
 
 ## 🧠 What `vc` does
 
-- Starts `ollama serve` in the background on port `11434` when available (for the default OpenCode backend)
 - Launches `npx vibe-kanban` in the foreground on its default port (vibe-kanban picks an available port; multiple processes are allowed)
 - Copies templates (`.codex`, `.claude`, `.design`, `todo.md`, `issues.md`, `refactor.json`) into the current directory without overwriting existing files
-- Seeds `opencode.json` with the local Ollama configuration if it is missing
+- Seeds `opencode.json` if it is missing
 - Syncs `profiles.json` to the vibe-kanban data directory so your saved boards persist locally
 - Adds common local files to `.gitignore` so they stay out of commits
 - Touches `todo.md` and opens it in Cursor/VS Code when the `code` CLI is installed
@@ -72,7 +71,6 @@ Edit `scripts/vc` to adjust defaults such as the vibe-kanban port, the workspace
 
 **Requirements:**
 - macOS
-- Ollama installed (with models pulled) for the default OpenCode backend
 - Node.js + `npx` for running `vibe-kanban`
 - Cursor CLI (`code` or `cursor`) if you want `todo.md` to open automatically
 - Agent CLIs you plan to run (e.g., `codex`, `claude`)

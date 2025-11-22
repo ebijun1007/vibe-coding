@@ -10,8 +10,6 @@ template_dir="$script_dir/templates"
 cleanup_dir=""
 todo_path="$WORKDIR/todo.md"
 data_dir="$HOME/Library/Application Support/ai/bloop/vibe-kanban"
-ollama_port=11434
-ollama_busy=0
 
 mkdir -p "$data_dir"
 if [ -f "$WORKDIR/profiles.json" ]; then
@@ -19,31 +17,6 @@ if [ -f "$WORKDIR/profiles.json" ]; then
   echo "[info] Copied profiles.json to $data_dir"
 else
   echo "[warn] profiles.json not found in repo root; skipping copy"
-fi
-
-# Launch vibe-kanban in the background on its default port (multiple processes allowed)
-# Launch ollama serve in the background when port 11434 is free
-if command -v lsof >/dev/null 2>&1; then
-  if lsof -iTCP:"$ollama_port" -sTCP:LISTEN >/dev/null 2>&1; then
-    ollama_busy=1
-  fi
-elif command -v nc >/dev/null 2>&1; then
-  if nc -z localhost "$ollama_port" >/dev/null 2>&1; then
-    ollama_busy=1
-  fi
-else
-  echo "[warn] Unable to check port $ollama_port availability (lsof/nc missing); attempting launch"
-fi
-
-if command -v ollama >/dev/null 2>&1; then
-  if [ "$ollama_busy" -eq 1 ]; then
-    echo "[info] Port $ollama_port already in use; skipping ollama serve launch"
-  else
-    (OLLAMA_HOST="${OLLAMA_HOST:-}" ollama serve >/dev/null 2>&1 &)
-    echo "[info] Started ollama serve in background on port $ollama_port"
-  fi
-else
-  echo "[warn] ollama not found; cannot start ollama serve"
 fi
 
 if [ ! -d "$template_dir" ]; then
@@ -92,21 +65,6 @@ if [ ! -f "$opencode_path" ]; then
   cat > "$opencode_path" <<'EOF'
 {
   "$schema": "https://opencode.ai/config.json",
-  "provider": {
-    "ollama": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "Ollama (local)",
-      "options": {
-        "baseURL": "http://localhost:11434/v1"
-      },
-      "models": {
-        "hhao/qwen2.5-coder-tools:14b": {
-          "name": "Qwen2.5 Coder Tools 14B (local)"
-        }
-      }
-    }
-  },
-  "model": "ollama/hhao/qwen2.5-coder-tools:14b",
   "agent": {
     "build": {
       "description": "Default coding mode with only OpenCode tools.",
