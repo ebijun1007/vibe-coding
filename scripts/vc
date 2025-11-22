@@ -152,7 +152,7 @@ echo "[done] Workspace prepared for: $WORKDIR"
 # Launch vibe-kanban in the foreground at the end (vibe-kanban will pick an available port)
 if command -v npx >/dev/null 2>&1; then
   echo "[info] Starting vibe-kanban in foreground (Ctrl+C to stop; logs below)"
-  (cd "$WORKDIR" && npx vibe-kanban)
+  (cd "$WORKDIR" && PORT=3000 npx vibe-kanban)
 else
   echo "[warn] npx not found; cannot start vibe-kanban"
 fi
