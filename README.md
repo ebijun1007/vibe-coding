@@ -40,9 +40,9 @@ The command will prepare the workspace and create an iTerm layout with coding ag
 
 ## 🧠 What `vc` does
 
-- Copies templates (`.codex`, `.claude`, `.design`, `todo.md`, `issues.md`, `refactor.json`) into the current directory without overwriting existing files
+- Copies templates (`.codex`, `.claude`, `.design`, `.design/todo.md`, `issues.md`, `refactor.json`) into the current directory without overwriting existing files
 - Adds common local files to `.gitignore` so they stay out of commits
-- Touches `todo.md` and opens it in Cursor/VS Code when the `code` CLI is installed
+- Touches `.design/todo.md` and opens it in Cursor/VS Code when the `code` CLI is installed
 - Creates an iTerm layout with 3 panes: codex (top-left), claude (top-right), and terminal (bottom)
 
 ---
@@ -67,8 +67,8 @@ When you run `vc` from any project directory, the following files and directorie
 
 | Path | Action | Description |
 |------|--------|-------------|
-| `$WORKDIR/.gitignore` | Modified | Adds entries: `.claude`, `.codex`, `.design`, `refactor.json`, `issues.md`, `todo.md` |
-| `$WORKDIR/todo.md` | Created | Empty file created and opened in VS Code (only if missing) |
+| `$WORKDIR/.gitignore` | Modified | Adds entries: `.claude`, `.codex`, `.design`, `refactor.json`, `issues.md`, `.design/todo.md` |
+| `$WORKDIR/.design/todo.md` | Created | Empty file created and opened in VS Code (only if missing) |
 | `$WORKDIR/*` | Created | Template files copied from `templates/` directory (only if missing, no overwrite) |
 
 > **Note:** `$WORKDIR` refers to the current working directory where you execute the `vc` command.
@@ -97,5 +97,5 @@ Edit `scripts/vc` to adjust defaults such as the workspace templates directory o
 
 **Requirements:**
 - macOS with iTerm.app
-- VS Code CLI (`code`) if you want `todo.md` to open automatically
+- VS Code CLI (`code`) if you want `.design/todo.md` to open automatically
 - Agent CLIs you plan to run (e.g., `codex`, `claude`)

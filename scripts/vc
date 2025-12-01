@@ -14,7 +14,7 @@ script_dir="$(cd "$(dirname "$0")" && pwd)"
 repo_url="https://github.com/ebijun1007/vibe-in-iterm.git"
 template_dir="$script_dir/templates"
 cleanup_dir=""
-todo_path="$WORKDIR/todo.md"
+todo_path="$WORKDIR/.design/todo.md"
 data_dir="$HOME/Library/Application Support/ai.bloop.vibe-kanban"
 CODEX_HOME="$WORKDIR/.codex"
 env_exports=()
@@ -45,7 +45,7 @@ fi
 [ -n "$cleanup_dir" ] && rm -rf "$cleanup_dir"
 
 # Ensure .gitignore has expected entries
-ignore_entries=(.claude .codex .design refactor.json issues.md todo.md)
+ignore_entries=(.claude .codex .design refactor.json issues.md .design/todo.md)
 gitignore_path="$WORKDIR/.gitignore"
 [[ -f "$gitignore_path" ]] || touch "$gitignore_path"
 added_entries=()
@@ -64,7 +64,7 @@ if command -v code >/dev/null 2>&1; then
   [ -f "$todo_path" ] || touch "$todo_path"
   code "$todo_path"
 else
-  echo "[warn] code command not found; skipping opening todo.md"
+  echo "[warn] code command not found; skipping opening .design/todo.md"
 fi
 
 echo "[done] Workspace prepared for: $WORKDIR"
