@@ -1,0 +1,9 @@
+.claude
+.codex
+.design
+!/templates/.claude
+!/templates/.design
+!/templates/.codex
+refactor.json
+issues.md
+todo.md
