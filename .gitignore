@@ -1,9 +1,4 @@
-.claude
-.codex
-.design
-!/templates/.claude
-!/templates/.design
-!/templates/.codex
-refactor.json
-issues.md
-todo.md
+# Ignore specific files in .codex
+.codex/log
+.codex/sessions/*
+.codex/auth.json

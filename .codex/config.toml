@@ -1,0 +1,6 @@
+[mcp_servers.vibe-kanban]
+command = "npx"
+args = ["-y", "vibe-kanban", "--mcp"]
+
+[projects."/Users/ebinajun/workdir/vibe-coding"]
+trust_level = "trusted"

@@ -1,3 +1,0 @@
-[mcp_servers.vibe-kanban]
-command = "npx"
-args = ["-y", "vibe-kanban", "--mcp"]
