@@ -79,8 +79,9 @@ When you run `vc` from any project directory, the following files and directorie
 
 ```
 .
+├── vc                # Wrapper that fetches and runs the latest vc-core script
 ├── scripts/
-│   └── vc            # Main vc command script
+│   └── vc-core.sh    # Core vc logic
 ├── setup.sh          # Installer for vc and helper CLIs
 ├── profiles.json     # vibe-kanban profiles copy source
 ├── templates/        # Workspace templates (codex/claude/design/todo/issues)
@@ -91,7 +92,7 @@ When you run `vc` from any project directory, the following files and directorie
 
 ## 🧩 Customization
 
-Edit `scripts/vc` to adjust defaults such as the workspace templates directory or the commands launched for your agents. After editing, rerun `bash setup.sh` to reinstall the updated script into `~/bin`.
+Edit `scripts/vc-core.sh` to adjust defaults such as the workspace templates directory or the commands launched for your agents. After editing, rerun `bash setup.sh` to reinstall the updated script into `~/bin`.
 
 ---
 

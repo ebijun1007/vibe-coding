@@ -2,3 +2,5 @@
 .codex/log
 .codex/sessions/*
 .codex/auth.json
+.codex/config.toml
+.codex/version.json

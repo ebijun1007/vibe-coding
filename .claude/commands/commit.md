@@ -50,9 +50,10 @@ Your job in this command is:
 
 5. **General rules**
    - Never push or interact with remotes in this command (no `git push`).
-   - コードレビュー時は、利用可能な Codex MCP と協業することを優先する。
-     - 差分の静的解析や詳細な指摘が必要な場合は、Codex MCP のレビューツールを呼び出して結果を参照する。
-     - ただし、最終的な BLOCKING / NON-BLOCKING の判断とレポート作成は、このコマンド（Claude Code）が責任を持って行う。
+   - During code review, prioritize collaborating with available Codex MCP tools.
+     - When static analysis of diffs or detailed findings are needed, call Codex MCP review tools and reference their results.
+     - However, this command (Claude Code) is responsible for the final BLOCKING / NON-BLOCKING judgment and report.
+   - If any NON-BLOCKING items are found, write them to `.design/non-blocking-issues.md`.
    - Do not perform refactors here; only **review and gate commits**.
    - Do **not** create or update any task or refactor tracking files.
    - Keep your explanations short but precise, optimized for an experienced engineer.
