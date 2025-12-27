@@ -4,3 +4,9 @@
 .codex/auth.json
 .codex/config.toml
 .codex/version.json
+.claude
+.codex
+.design
+refactor.json
+issues.md
+.design/todo.md
