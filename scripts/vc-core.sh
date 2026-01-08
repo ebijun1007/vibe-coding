@@ -45,38 +45,60 @@ if [ -z "$src_root" ]; then
   exit 1
 fi
 
-for path in .claude .codex .design; do
-  if [ ! -d "$src_root/$path" ]; then
-    echo "[error] Missing $path in template source: $VC_TEMPLATE_REPO@$VC_TEMPLATE_REF" >&2
+# .design をワークディレクトリにコピー（存在しない場合のみ）
+if [ ! -d "$WORKDIR/.design" ]; then
+  if [ ! -d "$src_root/.design" ]; then
+    echo "[error] Missing .design in template source: $VC_TEMPLATE_REPO@$VC_TEMPLATE_REF" >&2
     exit 1
+  fi
+  cp -R -p "$src_root/.design" "$WORKDIR/.design"
+  echo "[info] Created .design directory"
+fi
+
+# ~/.claude に追加分をマージ（既存ファイルは上書きしない）
+CLAUDE_HOME="$HOME/.claude"
+mkdir -p "$CLAUDE_HOME"
+for subdir in commands skills hooks; do
+  if [ -d "$src_root/.claude/$subdir" ]; then
+    mkdir -p "$CLAUDE_HOME/$subdir"
+    for file in "$src_root/.claude/$subdir"/*; do
+      [ -e "$file" ] || continue
+      fname="$(basename "$file")"
+      # .keep ファイルはスキップ
+      [ "$fname" = ".keep" ] && continue
+      if [ ! -e "$CLAUDE_HOME/$subdir/$fname" ]; then
+        cp -R -p "$file" "$CLAUDE_HOME/$subdir/$fname"
+        echo "[info] Added to ~/.claude/$subdir: $fname"
+      fi
+    done
   fi
 done
 
-for path in .claude .codex .design; do
-  rm -rf "$WORKDIR/$path"
-  cp -R -p "$src_root/$path" "$WORKDIR/$path"
+# ~/.codex に追加分をマージ（既存ファイルは上書きしない）
+CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
+mkdir -p "$CODEX_HOME"
+for subdir in prompts skills; do
+  if [ -d "$src_root/.codex/$subdir" ]; then
+    mkdir -p "$CODEX_HOME/$subdir"
+    for file in "$src_root/.codex/$subdir"/*; do
+      [ -e "$file" ] || continue
+      fname="$(basename "$file")"
+      # .keep ファイルはスキップ
+      [ "$fname" = ".keep" ] && continue
+      if [ ! -e "$CODEX_HOME/$subdir/$fname" ]; then
+        cp -R -p "$file" "$CODEX_HOME/$subdir/$fname"
+        echo "[info] Added to ~/.codex/$subdir: $fname"
+      fi
+    done
+  fi
 done
-
-CODEX_HOME="$WORKDIR/.codex"
-env_exports=()
 
 echo "[done] Workspace prepared for: $WORKDIR"
 
-# Build shared environment exports for the iTerm panes
-env_exports+=("CODEX_HOME=$CODEX_HOME")
-
-env_prefix=""
-for entry in "${env_exports[@]}"; do
-  key=${entry%%=*}
-  val=${entry#*=}
-  env_prefix+="export $key=$(printf '%q' "$val"); "
-done
-
 # Run AppleScript to create iTerm layout
-ENV_PREFIX="$env_prefix" osascript <<EOF
+osascript <<EOF
 on run
   set workdir to "$WORKDIR"
-  set envPrefix to (system attribute "ENV_PREFIX")
 
   tell application "iTerm"
     -- use current session and split it
@@ -94,12 +116,12 @@ on run
 
     -- top left pane: run codex in the repo
     tell topLeftPane
-      write text "cd " & workdir & "; if command -v codex >/dev/null 2>&1; then " & envPrefix & " codex; else echo \"[warn] codex not found in PATH\"; fi"
+      write text "cd " & workdir & "; if command -v codex >/dev/null 2>&1; then codex; else echo \"[warn] codex not found in PATH\"; fi"
     end tell
 
     -- top right pane: run claude code (dangerously skip permissions)
     tell topRightPane
-      write text "cd " & workdir & "; if command -v claude >/dev/null 2>&1; then " & envPrefix & " claude code --dangerously-skip-permissions; else echo \"[warn] claude not found in PATH\"; fi"
+      write text "cd " & workdir & "; if command -v claude >/dev/null 2>&1; then claude --dangerously-skip-permissions; else echo \"[warn] claude not found in PATH\"; fi"
     end tell
 
     -- bottom pane: leave as terminal (just cd to workdir)
